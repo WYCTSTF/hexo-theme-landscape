@@ -20,6 +20,178 @@
 <% } %>
 
 <%- js('js/script') %>
+
+<!-- Local Search Configuration and Script -->
+<% if (theme.local_search && theme.local_search.enable) { %>
+<script>
+window.CONFIG = {
+  path: '<%= config.search.path || "search.json" %>',
+  localsearch: {
+    top_n_per_article: <%= theme.local_search.top_n_per_article || 1 %>,
+    unescape: <%= theme.local_search.unescape || false %>
+  },
+  i18n: {
+    hits: '<%= __("search.hits") || "{hits} results found" %>'
+  }
+};
+
+console.log('Search config:', window.CONFIG);
+
+// LocalSearch class implementation
+class LocalSearch {
+  constructor({path, top_n_per_article, unescape}) {
+    this.path = path;
+    this.top_n_per_article = top_n_per_article;
+    this.unescape = unescape;
+    this.isfetched = false;
+    this.datas = null;
+    console.log('LocalSearch initialized with path:', this.path);
+  }
+
+  fetchData() {
+    if (this.isfetched) return;
+    
+    console.log('Fetching search data from:', this.path);
+    fetch(this.path)
+      .then(response => {
+        console.log('Search data response:', response);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(data => {
+        console.log('Raw search data:', data.substring(0, 200) + '...');
+        this.isfetched = true;
+        
+        // Try to detect if it's JSON or XML
+        const trimmedData = data.trim();
+        if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+          // JSON format
+          this.datas = this.parseJSON(data);
+        } else if (trimmedData.startsWith('<')) {
+          // XML format
+          this.datas = this.parseXML(data);
+        } else {
+          throw new Error('Unknown data format');
+        }
+        
+        console.log('Parsed search data:', this.datas);
+        window.dispatchEvent(new Event('search:loaded'));
+      })
+      .catch(err => {
+        console.error('Search data fetch failed:', err);
+      });
+  }
+
+  parseJSON(jsonStr) {
+    try {
+      const data = JSON.parse(jsonStr);
+      return data.map((item, index) => ({
+        id: index,
+        title: item.title || '',
+        content: item.content || item.text || '',
+        url: item.url || item.path || ''
+      }));
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      return [];
+    }
+  }
+
+  parseXML(xml) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'text/xml');
+      const entries = Array.from(doc.querySelectorAll('entry'));
+      
+      return entries.map((entry, index) => ({
+        id: index,
+        title: entry.querySelector('title')?.textContent || '',
+        content: entry.querySelector('content')?.textContent || '',
+        url: entry.querySelector('url')?.textContent || ''
+      }));
+    } catch (e) {
+      console.error('XML parse error:', e);
+      return [];
+    }
+  }
+
+  getResultItems(keywords) {
+    console.log('getResultItems called with keywords:', keywords);
+    console.log('Available data:', this.datas);
+    
+    if (!this.datas) {
+      console.log('No search data available');
+      return [];
+    }
+    
+    const results = this.datas.map(data => {
+      let hitCount = 0;
+      let includedCount = 0;
+      let content = data.content;
+      let title = data.title;
+      
+      keywords.forEach(keyword => {
+        if (keyword === '') return;
+        
+        const titleMatches = (title.toLowerCase().match(new RegExp(keyword.toLowerCase(), 'g')) || []).length;
+        const contentMatches = (content.toLowerCase().match(new RegExp(keyword.toLowerCase(), 'g')) || []).length;
+        
+        if (titleMatches > 0 || contentMatches > 0) {
+          includedCount++;
+          hitCount += titleMatches + contentMatches;
+          
+          // Highlight keywords
+          const regex = new RegExp(`(${keyword})`, 'gi');
+          title = title.replace(regex, '<mark class="search-keyword">$1</mark>');
+          content = content.replace(regex, '<mark class="search-keyword">$1</mark>');
+        }
+      });
+      
+      if (includedCount === 0) return null;
+      
+      // Truncate content
+      if (content.length > 200) {
+        content = content.substring(0, 200) + '...';
+      }
+      
+      return {
+        id: data.id,
+        hitCount,
+        includedCount,
+        item: `<li>
+          <a href="${data.url}" class="search-result-title">${title}</a>
+          <p class="search-result">${content}</p>
+        </li>`
+      };
+    }).filter(item => item !== null);
+    
+    console.log('Search results:', results);
+    return results;
+  }
+
+  highlightSearchWords(container) {
+    if (!container) return;
+    
+    const searchText = new URLSearchParams(window.location.search).get('s');
+    if (!searchText) return;
+    
+    const keywords = searchText.split(/[-\s]+/);
+    keywords.forEach(keyword => {
+      if (keyword === '') return;
+      
+      const regex = new RegExp(`(${keyword})`, 'gi');
+      container.innerHTML = container.innerHTML.replace(regex, '<mark class="search-keyword">$1</mark>');
+    });
+  }
+}
+
+window.LocalSearch = LocalSearch;
+</script>
+<%- js('js/search/local-search') %>
+<% } %>
+
 <%- partial('gauges-analytics') %>
 
 <% if(theme.valine.enable && theme.valine.appId && theme.valine.appKey){ %>

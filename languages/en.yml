@@ -1,5 +1,5 @@
 categories: Categories
-search: Search
+search_btn: Search
 tags: Tags
 tagcloud: Tag Cloud
 tweets: Tweets
@@ -17,3 +17,10 @@ powered_by: Powered by
 rss_feed: RSS Feed
 category: Category
 tag: Tag
+
+search:
+  title: Search
+  placeholder: Search articles...
+  hits: "{hits} results found"
+  no_results: "No results found"
+  loading: "Searching..."

@@ -1,5 +1,5 @@
 categories: 分类
-search: 搜索
+search_btn: 搜索
 tags: 标签
 tagcloud: 标签云
 tweets: 推文
@@ -17,3 +17,10 @@ powered_by: Powered by
 rss_feed: RSS 订阅
 category: 目录
 tag: 标签
+
+search:
+  title: 搜索
+  placeholder: 搜索文章...
+  hits: 找到 {hits} 个结果
+  no_results: 没有找到结果
+  loading: 搜索中...
