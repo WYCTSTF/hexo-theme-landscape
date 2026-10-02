@@ -1,13 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Local search script loaded');
-  console.log('CONFIG:', window.CONFIG);
-  
   if (!CONFIG.path) {
     // Search DB path
     console.warn('`hexo-generator-searchdb` plugin is not installed!');
     return;
   }
-  
+
   const localSearch = new LocalSearch({
     path             : CONFIG.path,
     top_n_per_article: CONFIG.localsearch.top_n_per_article,
@@ -18,38 +15,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.querySelector('.search-result-container');
   const overlay = document.querySelector('.search-pop-overlay');
 
-  console.log('DOM elements found:');
-  console.log('- input:', input);
-  console.log('- container:', container);
-  console.log('- overlay:', overlay);
-
   if (!input || !container || !overlay) {
     console.warn('Search DOM elements not found');
     return;
   }
 
   const inputEventFunction = () => {
-    console.log('Input event triggered');
-    console.log('LocalSearch fetched status:', localSearch.isfetched);
-    
-    if (!localSearch.isfetched) {
-      console.log('Data not fetched yet');
-      return;
-    }
-    
+    if (!localSearch.isfetched) return;
+
     const searchText = input.value.trim().toLowerCase();
-    console.log('Search text:', searchText);
-    
     const keywords = searchText.split(/[-\s]+/);
-    console.log('Keywords:', keywords);
-    
+
     let resultItems = [];
     if (searchText.length > 0) {
       // Perform local searching
       resultItems = localSearch.getResultItems(keywords);
-      console.log('Result items:', resultItems);
     }
-    
+
     if (keywords.length === 1 && keywords[0] === '') {
       container.innerHTML = '<div class="search-result-icon"><i class="fa fa-search fa-5x"></i></div>';
     } else if (resultItems.length === 0) {
@@ -83,22 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.popup-trigger').forEach(element => {
     element.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Search popup triggered');
-      
+
       document.body.classList.add('search-active');
       overlay.classList.add('search-active');
-      
+
       // Wait for search-popup animation to complete
-      setTimeout(() => {
-        input.focus();
-        console.log('Input focused');
-      }, 500);
-      
+      setTimeout(() => input.focus(), 500);
+
       if (!localSearch.isfetched) {
-        console.log('Fetching search data...');
         localSearch.fetchData();
-      } else {
-        console.log('Search data already available');
       }
     });
   });
@@ -114,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       onPopupClose();
     }
   });
-  
+
   const closeBtn = document.querySelector('.popup-btn-close');
   if (closeBtn) {
     closeBtn.addEventListener('click', onPopupClose);
@@ -129,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!localSearch.isfetched) localSearch.fetchData();
     }
   });
-  
+
   window.addEventListener('keyup', event => {
     if (event.key === 'Escape') {
       onPopupClose();

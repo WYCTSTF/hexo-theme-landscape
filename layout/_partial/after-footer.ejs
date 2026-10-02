@@ -25,7 +25,7 @@
 <% if (theme.local_search && theme.local_search.enable) { %>
 <script>
 window.CONFIG = {
-  path: '<%= config.search.path || "search.json" %>',
+  path: '<%= url_for(config.search.path || "search.json") %>',
   localsearch: {
     top_n_per_article: <%= theme.local_search.top_n_per_article || 1 %>,
     unescape: <%= theme.local_search.unescape || false %>
@@ -35,8 +35,6 @@ window.CONFIG = {
   }
 };
 
-console.log('Search config:', window.CONFIG);
-
 // LocalSearch class implementation
 class LocalSearch {
   constructor({path, top_n_per_article, unescape}) {
@@ -45,23 +43,19 @@ class LocalSearch {
     this.unescape = unescape;
     this.isfetched = false;
     this.datas = null;
-    console.log('LocalSearch initialized with path:', this.path);
   }
 
   fetchData() {
     if (this.isfetched) return;
-    
-    console.log('Fetching search data from:', this.path);
+
     fetch(this.path)
       .then(response => {
-        console.log('Search data response:', response);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.text();
       })
       .then(data => {
-        console.log('Raw search data:', data.substring(0, 200) + '...');
         this.isfetched = true;
         
         // Try to detect if it's JSON or XML
@@ -75,8 +69,7 @@ class LocalSearch {
         } else {
           throw new Error('Unknown data format');
         }
-        
-        console.log('Parsed search data:', this.datas);
+
         window.dispatchEvent(new Event('search:loaded'));
       })
       .catch(err => {
@@ -118,11 +111,7 @@ class LocalSearch {
   }
 
   getResultItems(keywords) {
-    console.log('getResultItems called with keywords:', keywords);
-    console.log('Available data:', this.datas);
-    
     if (!this.datas) {
-      console.log('No search data available');
       return [];
     }
     
@@ -166,8 +155,7 @@ class LocalSearch {
         </li>`
       };
     }).filter(item => item !== null);
-    
-    console.log('Search results:', results);
+
     return results;
   }
 
